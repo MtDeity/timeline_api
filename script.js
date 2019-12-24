@@ -1,3 +1,64 @@
+const fetchWrap = (divName, method, isTokenExist, url, params) => {
+  const render = (response) => {
+    const p = document.createElement("p");
+    p.textContent = JSON.stringify(response);
+    const div = document.querySelector(`.${divName}`);
+    div.appendChild(p);
+  }
+
+  if (!isTokenExist) {
+    fetch(url, {
+      method: method,
+      body: JSON.stringify(params),
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    }).then(res => res.json())
+    .then(response => {
+      console.log(JSON.stringify(response));
+      localStorage.token = response.token
+      render(response);
+    })
+    .catch(error => {
+      console.error(error);
+      render(response);
+    })
+  } else if (params) {
+    fetch(url, {
+      method: method,
+      body: JSON.stringify(params),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + localStorage.token
+      }
+    }).then(res => res.json())
+    .then(response => {
+      console.log(JSON.stringify(response));
+      render(response);
+    })
+    .catch(error => {
+      console.error(error);
+      render(response);
+    })
+  } else {
+    fetch(url, {
+      method: method,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + localStorage.token
+      }
+    }).then(res => res.json())
+    .then(response => {
+      console.log(JSON.stringify(response));
+      render(response);
+    })
+    .catch(error => {
+      console.error(error);
+      render(response);
+    })
+  }
+}
+
 // ユーザー登録
 document.getElementById("sign_up_submit").addEventListener("click", (event) => {
   event.preventDefault();
@@ -11,28 +72,7 @@ document.getElementById("sign_up_submit").addEventListener("click", (event) => {
       password_confirmation: document.getElementById("sign_up_password_confirmation").value
     }
   };
-  fetch(signUpUrl, {
-    method: 'POST',
-    body: JSON.stringify(signUpParams),
-    headers: {
-      'Content-Type': 'application/json'
-    }
-  }).then(res => res.json())
-  .then(response => {
-      console.log('Success:', JSON.stringify(response));
-      localStorage.token = response.token
-      const sign_up_render = document.createElement("p");
-      sign_up_render.textContent = JSON.stringify(response);
-      const sign_up = document.querySelector(".sign_up");
-      sign_up.appendChild(sign_up_render);
-    })
-  .catch(error => {
-    console.error(error);
-    const sign_up_render = document.createElement("p");
-    sign_up_render.textContent = JSON.stringify(response);
-    const sign_up = document.querySelector(".sign_up");
-    sign_up.appendChild(sign_up_render);
-  });
+  fetchWrap("sign_up", "POST", false, signUpUrl, signUpParams);
 });
 
 // ユーザーログイン
@@ -46,28 +86,7 @@ document.getElementById("sign_in_submit").addEventListener("click", (event) => {
       password_confirmation: document.getElementById("sign_in_password_confirmation").value
     }
   };
-  fetch(signInUrl, {
-    method: 'POST',
-    body: JSON.stringify(signInParams),
-    headers: {
-      'Content-Type': 'application/json'
-    }
-  }).then(res => res.json())
-  .then(response => {
-      console.log(JSON.stringify(response));
-      localStorage.token = response.token
-      const sign_in_render = document.createElement("p");
-      sign_in_render.textContent = JSON.stringify(response);
-      const sign_in = document.querySelector(".sign_in");
-      sign_in.appendChild(sign_in_render);
-    })
-  .catch(error => {
-    console.error(error);
-    const sign_in_render = document.createElement("p");
-    sign_in_render.textContent = error;
-    const sign_in = document.querySelector(".sign_in");
-    sign_in.appendChild(sign_in_render);
-  });
+  fetchWrap("sign_in", "POST", false, signInUrl, signInParams);
 });
 
 // ユーザー一覧
@@ -80,27 +99,7 @@ document.getElementById("users_submit").addEventListener("click", (event) => {
     query: document.getElementById("users_query").value
   };
   const usersQs = new URLSearchParams(usersParams);
-  fetch(`${usersUrl}?${usersQs}`, {
-    method: 'GET',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': 'Bearer ' + localStorage.token
-    }
-  }).then(res => res.json())
-  .then(response => {
-      console.log(JSON.stringify(response));
-      const users_render = document.createElement("p");
-      users_render.textContent = JSON.stringify(response);
-      const users = document.querySelector(".users");
-      users.appendChild(users_render);
-    })
-  .catch(error => {
-    console.error(error);
-    const users_render = document.createElement("p");
-    users_render.textContent = error;
-    const users = document.querySelector(".users");
-    users.appendChild(users_render);
-  });
+  fetchWrap("users", "GET", true, `${usersUrl}?${usersQs}`);
 });
 
 // ユーザー編集
@@ -113,55 +112,14 @@ document.getElementById("user_edit_submit").addEventListener("click", (event) =>
       bio: document.getElementById("user_edit_bio").value
     }
   };
-  fetch(userEditUrl, {
-    method: 'PUT',
-    body: JSON.stringify(userEditParams),
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': 'Bearer ' + localStorage.token
-    }
-  }).then(res => res.json())
-  .then(response => {
-      console.log(JSON.stringify(response));
-      const user_edit_render = document.createElement("p");
-      user_edit_render.textContent = JSON.stringify(response);
-      const user_edit = document.querySelector(".user_edit");
-      user_edit.appendChild(user_edit_render);
-    })
-  .catch(error => {
-    console.error(error);
-    const user_edit_render = document.createElement("p");
-    user_edit_render.textContent = error;
-    const user_edit = document.querySelector(".user_edit");
-    user_edit.appendChild(user_edit_render);
-  });
+  fetchWrap("user_edit", "PUT", true, userEditUrl, userEditParams);
 });
 
 // ユーザー削除
 document.getElementById("delete_submit").addEventListener("click", (event) => {
   event.preventDefault();
   const deleteUrl = `https://teachapi.herokuapp.com/users/${document.getElementById("delete_id").value}`;
-  fetch(deleteUrl, {
-    method: 'DELETE',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': 'Bearer ' + localStorage.token
-    }
-  }).then(res => res.json())
-  .then(response => {
-      console.log(JSON.stringify(response));
-      const delete_render = document.createElement("p");
-      delete_render.textContent = JSON.stringify(response);
-      const deletediv = document.querySelector(".delete");
-      deletediv.appendChild(delete_render);
-    })
-  .catch(error => {
-    console.error(error);
-    const delete_render = document.createElement("p");
-    delete_render.textContent = error;
-    const deletediv = document.querySelector(".delete");
-    deletediv.appendChild(delete_render);
-  });
+  fetchWrap("delete", "DELETE", true, deleteUrl);
 });
 
 // ユーザーのタイムライン
@@ -174,27 +132,7 @@ document.getElementById("timeline_submit").addEventListener("click", (event) => 
     query: document.getElementById("timeline_query").value
   };
   const timelineQs = new URLSearchParams(timelineParams);
-  fetch(`${timelineUrl}?${timelineQs}`, {
-    method: 'GET',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': 'Bearer ' + localStorage.token
-    }
-  }).then(res => res.json())
-  .then(response => {
-      console.log(JSON.stringify(response));
-      const timeline_render = document.createElement("p");
-      timeline_render.textContent = JSON.stringify(response);
-      const timeline = document.querySelector(".timeline");
-      timeline.appendChild(timeline_render);
-    })
-  .catch(error => {
-    console.error(error);
-    const timeline_render = document.createElement("p");
-    timeline_render.textContent = error;
-    const timeline = document.querySelector(".timeline");
-    timeline.appendChild(timeline_render);
-  });
+  fetchWrap("timeline", "GET", true, `${timelineUrl}?${timelineQs}`);
 });
 
 // 投稿作成
@@ -206,28 +144,7 @@ document.getElementById("post_submit").addEventListener("click", (event) => {
       text: document.getElementById("post_text").value,
     }
   };
-  fetch(postUrl, {
-    method: 'POST',
-    body: JSON.stringify(postParams),
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': 'Bearer ' + localStorage.token
-    }
-  }).then(res => res.json())
-  .then(response => {
-      console.log(JSON.stringify(response));
-      const post_render = document.createElement("p");
-      post_render.textContent = JSON.stringify(response);
-      const post = document.querySelector(".post");
-      post.appendChild(post_render);
-    })
-  .catch(error => {
-    console.error(error);
-    const post_render = document.createElement("p");
-    post_render.textContent = error;
-    const post = document.querySelector(".post");
-    post.appendChild(post_render);
-  });
+  fetchWrap("post", "POST", true, postUrl, postParams);
 });
 
 // 投稿編集
@@ -239,55 +156,14 @@ document.getElementById("edit_post_submit").addEventListener("click", (event) =>
       text: document.getElementById("edit_post_text").value
     }
   };
-  fetch(editPostUrl, {
-    method: 'PUT',
-    body: JSON.stringify(editPostParams),
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': 'Bearer ' + localStorage.token
-    }
-  }).then(res => res.json())
-  .then(response => {
-      console.log(JSON.stringify(response));
-      const edit_post_render = document.createElement("p");
-      edit_post_render.textContent = JSON.stringify(response);
-      const edit_post = document.querySelector(".edit_post");
-      edit_post.appendChild(edit_post_render);
-    })
-  .catch(error => {
-    console.error(error);
-    const edit_post_render = document.createElement("p");
-    edit_post_render.textContent = error;
-    const edit_post = document.querySelector(".edit_post");
-    edit_post.appendChild(edit_post_render);
-  });
+  fetchWrap("edit_post", "PUT", true, editPostUrl, editPostParams);
 });
 
 // 投稿削除
 document.getElementById("delete_post_submit").addEventListener("click", (event) => {
   event.preventDefault();
   const deletePostUrl = `https://teachapi.herokuapp.com/posts/${document.getElementById("delete_post_id").value}`;
-  fetch(deletePostUrl, {
-    method: 'DELETE',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': 'Bearer ' + localStorage.token
-    }
-  }).then(res => res.json())
-  .then(response => {
-      console.log(JSON.stringify(response));
-      const delete_post_render = document.createElement("p");
-      delete_post_render.textContent = JSON.stringify(response);
-      const delete_post = document.querySelector(".delete_post");
-      delete_post.appendChild(delete_post_render);
-    })
-  .catch(error => {
-    console.error(error);
-    const delete_post_render = document.createElement("p");
-    delete_post_render.textContent = error;
-    const delete_post = document.querySelector(".delete_post");
-    delete_post.appendChild(delete_post_render);
-  });
+  fetchWrap("delete_post", "DELETE", true, deletePostUrl);
 });
 
 // 投稿一覧
@@ -300,25 +176,5 @@ document.getElementById("all_posts_submit").addEventListener("click", (event) =>
     query: document.getElementById("all_posts_query").value
   };
   const allPostsQs = new URLSearchParams(allPostsParams);
-  fetch(`${allPostsUrl}?${allPostsQs}`, {
-    method: 'GET',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': 'Bearer ' + localStorage.token
-    }
-  }).then(res => res.json())
-  .then(response => {
-      console.log(JSON.stringify(response));
-      const all_posts_render = document.createElement("p");
-      all_posts_render.textContent = JSON.stringify(response);
-      const all_posts = document.querySelector(".all_posts");
-      all_posts.appendChild(all_posts_render);
-    })
-  .catch(error => {
-    console.error(error);
-    const all_posts_render = document.createElement("p");
-    all_posts_render.textContent = error;
-    const all_posts = document.querySelector(".all_posts");
-    all_posts.appendChild(all_posts_render);
-  });
+  fetchWrap("all_posts", "GET", true, `${allPostsUrl}?${allPostsQs}`);
 });
